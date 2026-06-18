@@ -17,6 +17,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private val _expenses = MutableStateFlow<List<Expense>>(loadExpenses())
     val expenses: StateFlow<List<Expense>> = _expenses.asStateFlow()
 
+    private val _categoryBudgets = MutableStateFlow<Map<ExpenseCategory, Double>>(loadBudgets())
+    val categoryBudgets: StateFlow<Map<ExpenseCategory, Double>> = _categoryBudgets.asStateFlow()
+
     private val _income = MutableStateFlow(prefs.getFloat("monthly_income", 0f).toDouble())
     val income: StateFlow<Double> = _income.asStateFlow()
 
@@ -32,6 +35,11 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         saveExpenses()
     }
 
+    fun setCategoryBudget(category: ExpenseCategory, amount: Double) {
+        _categoryBudgets.update { current -> current.toMutableMap().apply { put(category, amount) } }
+        saveBudgets()
+    }
+
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)
         prefs.edit().putString("expenses_v2", json).apply()
@@ -40,5 +48,15 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private fun loadExpenses(): List<Expense> {
         val json = prefs.getString("expenses_v2", null) ?: return emptyList()
         return try { gson.fromJson(json, object : TypeToken<List<Expense>>() {}.type) } catch (e: Exception) { emptyList() }
+    }
+
+    private fun saveBudgets() {
+        val json = gson.toJson(_categoryBudgets.value)
+        prefs.edit().putString("budgets_v2", json).apply()
+    }
+
+    private fun loadBudgets(): Map<ExpenseCategory, Double> {
+        val json = prefs.getString("budgets_v2", null) ?: return ExpenseCategory.entries.associateWith { 500.0 }
+        return try { gson.fromJson(json, object : TypeToken<Map<ExpenseCategory, Double>>() {}.type) } catch (e: Exception) { ExpenseCategory.entries.associateWith { 500.0 } }
     }
 }
