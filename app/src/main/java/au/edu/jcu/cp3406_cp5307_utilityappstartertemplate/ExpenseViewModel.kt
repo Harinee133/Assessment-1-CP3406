@@ -8,6 +8,7 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 
 class ExpenseViewModel(application: Application) : AndroidViewModel(application) {
     private val prefs = application.getSharedPreferences("WealthWatchPrefsV2", Context.MODE_PRIVATE)
@@ -18,6 +19,18 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
     private val _income = MutableStateFlow(prefs.getFloat("monthly_income", 0f).toDouble())
     val income: StateFlow<Double> = _income.asStateFlow()
+
+    fun addExpense(title: String, amount: Double, category: ExpenseCategory, isRecurring: Boolean = false) {
+        if (title.isBlank() || amount <= 0) return
+        val newExpense = Expense(title = title, amount = amount, category = category, isRecurring = isRecurring)
+        _expenses.update { it + newExpense }
+        saveExpenses()
+    }
+
+    fun removeExpense(expense: Expense) {
+        _expenses.update { currentList -> currentList.filter { it.id != expense.id } }
+        saveExpenses()
+    }
 
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)
