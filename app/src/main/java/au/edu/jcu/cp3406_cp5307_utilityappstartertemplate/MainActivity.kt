@@ -5,14 +5,19 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
@@ -85,6 +90,12 @@ fun DashboardScreen(viewModel: ExpenseViewModel) {
         tooltipInfo?.let { 
             Text(it, modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
         } ?: Text("Tap slices for insights", style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+
+        Spacer(Modifier.height(32.dp))
+        ExpenseCategory.entries.forEach { category ->
+            CategorySummaryCard(category, viewModel) { /* Will navigate in later commits */ }
+            Spacer(Modifier.height(12.dp))
+        }
     }
 }
 
@@ -93,6 +104,29 @@ fun SummaryItem(label: String, amount: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelSmall)
         Text(amount, fontWeight = FontWeight.Bold, color = color, fontSize = 18.sp)
+    }
+}
+
+@Composable
+fun CategorySummaryCard(category: ExpenseCategory, viewModel: ExpenseViewModel, onClick: () -> Unit) {
+    val expenses by viewModel.expenses.collectAsState()
+    val total = remember(expenses) { expenses.filter { it.category == category }.sumOf { it.amount } }
+    val catColors by viewModel.categoryColors.collectAsState()
+    val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
+
+    Card(
+        modifier = Modifier.fillMaxWidth().clickable { onClick() },
+        shape = RoundedCornerShape(16.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f))
+    ) {
+        Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+            Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor))
+            Spacer(Modifier.width(16.dp))
+            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                Text(category.displayName, fontWeight = FontWeight.Bold)
+                Text("$${"%.2f".format(total)}", fontWeight = FontWeight.Black)
+            }
+        }
     }
 }
 
