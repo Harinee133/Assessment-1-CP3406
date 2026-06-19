@@ -50,6 +50,12 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         saveColors()
     }
 
+    fun getCategoryTotal(category: ExpenseCategory): Double = _expenses.value.filter { it.category == category }.sumOf { it.amount }
+
+    fun getTotalSpending(): Double = _expenses.value.sumOf { it.amount }
+    
+    fun getBalance(): Double = _income.value - getTotalSpending()
+
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)
         prefs.edit().putString("expenses_v2", json).apply()

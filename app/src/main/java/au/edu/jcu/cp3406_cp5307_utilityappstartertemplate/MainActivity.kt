@@ -64,9 +64,7 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
 @Composable
 fun DashboardScreen(viewModel: ExpenseViewModel) {
     val income by viewModel.income.collectAsState()
-    val expenses by viewModel.expenses.collectAsState()
-    val totalSpent = expenses.sumOf { it.amount }
-    val balance = income - totalSpent
+    val balance = viewModel.getBalance()
     var tooltipInfo by remember { mutableStateOf<String?>(null) }
     
     Column(
