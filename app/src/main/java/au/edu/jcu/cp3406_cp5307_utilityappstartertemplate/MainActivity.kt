@@ -4,6 +4,7 @@ import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -11,7 +12,9 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -51,7 +54,6 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
 @Composable
 fun DashboardScreen(viewModel: ExpenseViewModel) {
     val income by viewModel.income.collectAsState()
-    // Simple calculation for now, will be refined in later commits
     val expenses by viewModel.expenses.collectAsState()
     val totalSpent = expenses.sumOf { it.amount }
     val balance = income - totalSpent
@@ -69,7 +71,10 @@ fun DashboardScreen(viewModel: ExpenseViewModel) {
                 SummaryItem("Balance", "$${"%.2f".format(balance)}", if(balance >= 0) Color.Blue else Color.Red)
             }
         }
-        Text("Spending Breakdown Placeholder", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Text("Spending Breakdown", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+        Spacer(Modifier.height(16.dp))
+        
+        PieChart(viewModel)
     }
 }
 
@@ -78,5 +83,39 @@ fun SummaryItem(label: String, amount: String, color: Color) {
     Column(horizontalAlignment = Alignment.CenterHorizontally) {
         Text(label, style = MaterialTheme.typography.labelSmall)
         Text(amount, fontWeight = FontWeight.Bold, color = color, fontSize = 18.sp)
+    }
+}
+
+@Composable
+fun PieChart(viewModel: ExpenseViewModel) {
+    val expenses by viewModel.expenses.collectAsState()
+    val catColors by viewModel.categoryColors.collectAsState()
+    val total = remember(expenses) { expenses.sumOf { it.amount } }
+    val categories = ExpenseCategory.entries
+
+    Box(contentAlignment = Alignment.Center) {
+        Canvas(modifier = Modifier.size(200.dp)) {
+            var startAngle = 0f
+            categories.forEach { category ->
+                val spending = expenses.filter { it.category == category }.sumOf { it.amount }
+                val sweepAngle = if (total > 0) (spending / total).toFloat() * 360f else 0f
+                if (sweepAngle > 0) {
+                    drawArc(
+                        color = Color(catColors[category] ?: Color.Gray.toArgb()),
+                        startAngle = startAngle, sweepAngle = sweepAngle, useCenter = true,
+                        size = Size(size.width, size.height)
+                    )
+                    startAngle += sweepAngle
+                }
+            }
+            if (total == 0.0) {
+                drawCircle(color = Color.LightGray, radius = size.width / 2)
+            }
+            drawCircle(color = Color.White, radius = size.width / 3.5f)
+        }
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+            Text("Spent", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
+            Text("$${"%.2f".format(total)}", fontWeight = FontWeight.Black, fontSize = 16.sp)
+        }
     }
 }
