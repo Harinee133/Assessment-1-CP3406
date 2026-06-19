@@ -7,7 +7,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import au.edu.jcu.cp3406_cp5307_utilityappstartertemplate.ui.theme.CP3406_CP5603UtilityAppStarterTemplateTheme
 
@@ -38,5 +43,13 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
         Box(modifier = Modifier.padding(innerPadding)) {
             Text("Dashboard Content Placeholder")
         }
+    }
+}
+
+@Composable
+fun SummaryItem(label: String, amount: String, color: Color) {
+    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+        Text(label, style = MaterialTheme.typography.labelSmall)
+        Text(amount, fontWeight = FontWeight.Bold, color = color, fontSize = 18.sp)
     }
 }
