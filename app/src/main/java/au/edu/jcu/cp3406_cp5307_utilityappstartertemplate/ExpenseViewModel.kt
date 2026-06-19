@@ -2,6 +2,8 @@ package au.edu.jcu.cp3406_cp5307_utilityappstartertemplate
 
 import android.app.Application
 import android.content.Context
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.lifecycle.AndroidViewModel
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
@@ -19,6 +21,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
 
     private val _categoryBudgets = MutableStateFlow<Map<ExpenseCategory, Double>>(loadBudgets())
     val categoryBudgets: StateFlow<Map<ExpenseCategory, Double>> = _categoryBudgets.asStateFlow()
+
+    private val _categoryColors = MutableStateFlow<Map<ExpenseCategory, Int>>(loadColors())
+    val categoryColors: StateFlow<Map<ExpenseCategory, Int>> = _categoryColors.asStateFlow()
 
     private val _income = MutableStateFlow(prefs.getFloat("monthly_income", 0f).toDouble())
     val income: StateFlow<Double> = _income.asStateFlow()
@@ -40,6 +45,11 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         saveBudgets()
     }
 
+    fun setCategoryColor(category: ExpenseCategory, color: Color) {
+        _categoryColors.update { current -> current.toMutableMap().apply { put(category, color.toArgb()) } }
+        saveColors()
+    }
+
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)
         prefs.edit().putString("expenses_v2", json).apply()
@@ -58,5 +68,22 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private fun loadBudgets(): Map<ExpenseCategory, Double> {
         val json = prefs.getString("budgets_v2", null) ?: return ExpenseCategory.entries.associateWith { 500.0 }
         return try { gson.fromJson(json, object : TypeToken<Map<ExpenseCategory, Double>>() {}.type) } catch (e: Exception) { ExpenseCategory.entries.associateWith { 500.0 } }
+    }
+
+    private fun saveColors() {
+        val json = gson.toJson(_categoryColors.value)
+        prefs.edit().putString("category_colors", json).apply()
+    }
+
+    private fun loadColors(): Map<ExpenseCategory, Int> {
+        val defaultColors = mapOf(
+            ExpenseCategory.Transportation to Color(0xFF6200EE).toArgb(),
+            ExpenseCategory.Food to Color(0xFF03DAC5).toArgb(),
+            ExpenseCategory.Entertainment to Color(0xFFFB8C00).toArgb(),
+            ExpenseCategory.Utilities to Color(0xFFE91E63).toArgb(),
+            ExpenseCategory.Others to Color(0xFF4CAF50).toArgb()
+        )
+        val json = prefs.getString("category_colors", null) ?: return defaultColors
+        return try { gson.fromJson(json, object : TypeToken<Map<ExpenseCategory, Int>>() {}.type) } catch (e: Exception) { defaultColors }
     }
 }
