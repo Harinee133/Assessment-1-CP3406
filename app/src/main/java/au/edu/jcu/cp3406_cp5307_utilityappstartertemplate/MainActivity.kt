@@ -77,7 +77,7 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
                     currentScreen = "CategoryDetail"
                 }
                 "CategoryDetail" -> selectedCategory?.let { 
-                    CategoryDetailPlaceholder(it)
+                    CategoryFileScreen(it, viewModel)
                 }
             }
         }
@@ -208,10 +208,22 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
 }
 
 @Composable
-fun CategoryDetailPlaceholder(category: ExpenseCategory) {
-    Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-        Text("Details for ${category.displayName}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(16.dp))
-        Text("Transaction history coming in next commit...")
+fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
+    val expenses by viewModel.expenses.collectAsState()
+    val total = remember(expenses) { expenses.filter { it.category == category }.sumOf { it.amount } }
+    val catColors by viewModel.categoryColors.collectAsState()
+    val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
+
+    Column(Modifier.fillMaxSize().padding(16.dp)) {
+        Box(modifier = Modifier.fillMaxWidth().background(categoryColor, RoundedCornerShape(16.dp)).padding(20.dp)) {
+            Column {
+                Text("${category.displayName} File", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
+                Text("Total Spent: $${"%.2f".format(total)}", color = Color.White)
+            }
+        }
+        
+        Spacer(Modifier.height(24.dp))
+        Text("Transaction Log", fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Text("Detailed list coming in next commit...", style = MaterialTheme.typography.bodyMedium)
     }
 }
