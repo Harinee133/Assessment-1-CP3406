@@ -13,8 +13,11 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -50,19 +53,39 @@ class MainActivity : ComponentActivity() {
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun WealthWatchApp(viewModel: ExpenseViewModel) {
+    var currentScreen by rememberSaveable { mutableStateOf("Home") }
+    var selectedCategory by remember { mutableStateOf<ExpenseCategory?>(null) }
+
     Scaffold(
         topBar = {
-            CenterAlignedTopAppBar(title = { Text("WealthWatch Pro") })
+            CenterAlignedTopAppBar(
+                title = { Text("WealthWatch Pro") },
+                navigationIcon = {
+                    if (currentScreen == "CategoryDetail") {
+                        IconButton(onClick = { currentScreen = "Home" }) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        }
+                    }
+                }
+            )
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
-            DashboardScreen(viewModel)
+            when (currentScreen) {
+                "Home" -> DashboardScreen(viewModel) { cat ->
+                    selectedCategory = cat
+                    currentScreen = "CategoryDetail"
+                }
+                "CategoryDetail" -> selectedCategory?.let { 
+                    CategoryDetailPlaceholder(it)
+                }
+            }
         }
     }
 }
 
 @Composable
-fun DashboardScreen(viewModel: ExpenseViewModel) {
+fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> Unit) {
     val income by viewModel.income.collectAsState()
     val balance = viewModel.getBalance()
     var tooltipInfo by remember { mutableStateOf<String?>(null) }
@@ -83,7 +106,7 @@ fun DashboardScreen(viewModel: ExpenseViewModel) {
         Text("Spending Breakdown", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Spacer(Modifier.height(16.dp))
         
-        PieChart(viewModel, onCategoryClick = {}, onHover = { tooltipInfo = it })
+        PieChart(viewModel, onCategoryClick, onHover = { tooltipInfo = it })
 
         tooltipInfo?.let { 
             Text(it, modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
@@ -91,7 +114,7 @@ fun DashboardScreen(viewModel: ExpenseViewModel) {
 
         Spacer(Modifier.height(32.dp))
         ExpenseCategory.entries.forEach { category ->
-            CategorySummaryCard(category, viewModel) { /* Will navigate in later commits */ }
+            CategorySummaryCard(category, viewModel) { onCategoryClick(category) }
             Spacer(Modifier.height(12.dp))
         }
     }
@@ -181,5 +204,14 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
             Text("Spent", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
             Text("$${"%.2f".format(total)}", fontWeight = FontWeight.Black, fontSize = 16.sp)
         }
+    }
+}
+
+@Composable
+fun CategoryDetailPlaceholder(category: ExpenseCategory) {
+    Column(Modifier.fillMaxSize().padding(16.dp), horizontalAlignment = Alignment.CenterHorizontally) {
+        Text("Details for ${category.displayName}", fontSize = 24.sp, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(16.dp))
+        Text("Transaction history coming in next commit...")
     }
 }
