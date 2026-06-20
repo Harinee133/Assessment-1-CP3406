@@ -9,6 +9,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -210,7 +212,8 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
 @Composable
 fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
     val expenses by viewModel.expenses.collectAsState()
-    val total = remember(expenses) { expenses.filter { it.category == category }.sumOf { it.amount } }
+    val history = remember(expenses) { expenses.filter { it.category == category } }
+    val total = remember(history) { history.sumOf { it.amount } }
     val catColors by viewModel.categoryColors.collectAsState()
     val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
 
@@ -224,6 +227,18 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
         
         Spacer(Modifier.height(24.dp))
         Text("Transaction Log", fontSize = 22.sp, fontWeight = FontWeight.Black)
-        Text("Detailed list coming in next commit...", style = MaterialTheme.typography.bodyMedium)
+
+        LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
+            items(history.reversed(), key = { it.id }) { expense ->
+                Row(
+                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(expense.title, fontWeight = FontWeight.Bold)
+                    Text("-$${"%.2f".format(expense.amount)}", color = Color.Red, fontWeight = FontWeight.Black)
+                }
+            }
+        }
     }
 }
