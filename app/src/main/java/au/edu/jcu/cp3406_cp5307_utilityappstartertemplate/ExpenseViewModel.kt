@@ -83,7 +83,13 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         saveColors()
     }
 
-    fun getCategoryTotal(category: ExpenseCategory): Double = _expenses.value.filter { it.category == category }.sumOf { it.amount }
+    fun getExpensesByCategory(category: ExpenseCategory): List<Expense> = _expenses.value.filter { it.category == category }
+    fun getCategoryTotal(category: ExpenseCategory): Double = getExpensesByCategory(category).sumOf { it.amount }
+
+    fun getCategoryProgress(category: ExpenseCategory): Float {
+        val limit = _categoryBudgets.value[category] ?: 500.0
+        return if (limit <= 0) 0f else (getCategoryTotal(category) / limit).toFloat().coerceIn(0f, 1.1f)
+    }
 
     fun getTotalSpending(): Double = _expenses.value.sumOf { it.amount }
     
@@ -92,6 +98,17 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun getTotalBudget(): Double = _categoryBudgets.value.values.sumOf { it }
     
     fun isBudgetOverIncome(): Boolean = getTotalBudget() > _income.value
+
+    fun getCategoryInsights(category: ExpenseCategory): String {
+        val total = getCategoryTotal(category)
+        val budget = _categoryBudgets.value[category] ?: 500.0
+        return when {
+            total > budget -> "Budget exceeded by ${formatAmount(total - budget)}!"
+            total == budget -> "You have reached your exact budget limit!"
+            total >= budget * 0.8 -> "Warning: 80% limit reached."
+            else -> "Spending is within limits."
+        }
+    }
 
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)

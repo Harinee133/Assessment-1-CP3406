@@ -63,7 +63,7 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
     Scaffold(
         topBar = {
             CenterAlignedTopAppBar(
-                title = { Text("WealthWatch Pro") },
+                title = { Text("WealthWatch Pro", fontWeight = FontWeight.ExtraBold) },
                 navigationIcon = {
                     if (currentScreen == "CategoryDetail") {
                         IconButton(onClick = { currentScreen = "Home" }) {
@@ -118,10 +118,10 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-            Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 SummaryItem("Income", viewModel.formatAmount(income), Color(0xFF4CAF50))
                 SummaryItem("Balance", viewModel.formatAmount(balance), if(balance >= 0) Color.Blue else Color.Red)
             }
@@ -153,9 +153,12 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
 
         tooltipInfo?.let { 
             Text(it, modifier = Modifier.padding(top = 12.dp), fontWeight = FontWeight.ExtraBold, color = MaterialTheme.colorScheme.primary)
-        } ?: Text("Tap slices for insights", style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
+        } ?: Text("Select slices for details", style = MaterialTheme.typography.bodySmall, color = Color.Gray, modifier = Modifier.padding(top = 8.dp))
 
         Spacer(Modifier.height(32.dp))
+        Text("Category Files", modifier = Modifier.align(Alignment.Start), fontSize = 20.sp, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(12.dp))
+        
         ExpenseCategory.entries.forEach { category ->
             CategorySummaryCard(category, viewModel) { onCategoryClick(category) }
             Spacer(Modifier.height(12.dp))
@@ -163,6 +166,7 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
 
         Spacer(Modifier.height(24.dp))
         QuickAddExpense(viewModel)
+        Spacer(Modifier.height(40.dp))
     }
 }
 
@@ -178,6 +182,7 @@ fun SummaryItem(label: String, amount: String, color: Color) {
 fun CategorySummaryCard(category: ExpenseCategory, viewModel: ExpenseViewModel, onClick: () -> Unit) {
     val expenses by viewModel.expenses.collectAsState()
     val total = remember(expenses) { expenses.filter { it.category == category }.sumOf { it.amount } }
+    val progress = viewModel.getCategoryProgress(category)
     val catColors by viewModel.categoryColors.collectAsState()
     val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
 
@@ -189,9 +194,18 @@ fun CategorySummaryCard(category: ExpenseCategory, viewModel: ExpenseViewModel, 
         Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
             Box(Modifier.size(12.dp).clip(CircleShape).background(categoryColor))
             Spacer(Modifier.width(16.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                Text(category.displayName, fontWeight = FontWeight.Bold)
-                Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black)
+            Column(Modifier.weight(1f)) {
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
+                    Text(category.displayName, fontWeight = FontWeight.Bold)
+                    Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black)
+                }
+                Spacer(Modifier.height(8.dp))
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier.fillMaxWidth().height(8.dp).clip(CircleShape),
+                    color = categoryColor,
+                    trackColor = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f)
+                )
             }
         }
     }
@@ -258,8 +272,11 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
     val expenses by viewModel.expenses.collectAsState()
     val history = remember(expenses) { expenses.filter { it.category == category } }
     val total = remember(history) { history.sumOf { it.amount } }
+    val budgets by viewModel.categoryBudgets.collectAsState()
+    val limit = budgets[category] ?: 500.0
     val catColors by viewModel.categoryColors.collectAsState()
     val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
+    val isExceeded = total > limit
     val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
@@ -267,16 +284,47 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
             Column {
                 Text("${category.displayName} File", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
                 Text("Total Spent: ${viewModel.formatAmount(total)}", color = Color.White)
+                Text("Allocated Budget: ${viewModel.formatAmount(limit)}", color = Color.White, fontSize = 12.sp)
             }
         }
         
+        Spacer(Modifier.height(16.dp))
+        
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(16.dp),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isExceeded) Color(0xFFFFEBEE) else MaterialTheme.colorScheme.secondaryContainer
+            ),
+            border = if (isExceeded) BorderStroke(2.dp, Color.Red) else null
+        ) {
+            Row(Modifier.padding(16.dp), verticalAlignment = Alignment.CenterVertically) {
+                Icon(
+                    imageVector = if (isExceeded) Icons.Default.Warning else Icons.Default.Star,
+                    null,
+                    tint = if (isExceeded) Color.Red else Color(0xFF673AB7)
+                )
+                Spacer(Modifier.width(12.dp))
+                Text(
+                    text = viewModel.getCategoryInsights(category),
+                    fontWeight = FontWeight.Bold,
+                    color = if (isExceeded) Color.Red else MaterialTheme.colorScheme.onSecondaryContainer
+                )
+            }
+        }
+
         Spacer(Modifier.height(24.dp))
-        Text("Transaction Log", fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Text("Transaction History", fontSize = 22.sp, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(8.dp))
 
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(history.reversed(), key = { it.id }) { expense ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(16.dp),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(MaterialTheme.colorScheme.surface)
+                        .border(1.dp, categoryColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
+                        .padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -299,20 +347,63 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
     val isDark by viewModel.isDarkMode.collectAsState()
     val notifications by viewModel.notificationsEnabled.collectAsState()
     val currentCurrency by viewModel.currency.collectAsState()
+    val catColors by viewModel.categoryColors.collectAsState()
+    val budgets by viewModel.categoryBudgets.collectAsState()
     val income by viewModel.income.collectAsState()
     val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
-        Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Black)
+        Text("Personalization", fontSize = 24.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(16.dp))
         
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Dark Mode", Modifier.weight(1f))
+            Text("Dark Mode", Modifier.weight(1f), fontWeight = FontWeight.Medium)
             Switch(checked = isDark, onCheckedChange = { viewModel.toggleDarkMode() })
         }
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
-            Text("Notifications", Modifier.weight(1f))
+            Text("Enable Notifications", Modifier.weight(1f), fontWeight = FontWeight.Medium)
             Switch(checked = notifications, onCheckedChange = { viewModel.toggleNotifications() })
+        }
+
+        Spacer(Modifier.height(32.dp))
+        Text("Financial Targets", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        var incomeInput by remember { mutableStateOf(income.toString()) }
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            Text("Monthly Income", Modifier.weight(1f))
+            OutlinedTextField(
+                value = incomeInput, onValueChange = { incomeInput = it },
+                label = { Text(currentCurrency.symbol) }, modifier = Modifier.width(120.dp),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            IconButton(onClick = { 
+                incomeInput.toDoubleOrNull()?.let { 
+                    viewModel.setIncome(it)
+                    Toast.makeText(context, "Income Saved", Toast.LENGTH_SHORT).show()
+                }
+            }) { Icon(Icons.Default.Check, null, tint = Color.Green) }
+        }
+
+        Spacer(Modifier.height(32.dp))
+        Text("Category Themes", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        val availableColors = listOf(Color(0xFF6200EE), Color(0xFF03DAC5), Color(0xFFFB8C00), Color(0xFFE91E63), Color(0xFF4CAF50), Color.Blue, Color.Red, Color.Black)
+        ExpenseCategory.entries.forEach { category ->
+            Card(modifier = Modifier.fillMaxWidth().padding(vertical = 4.dp), shape = RoundedCornerShape(12.dp)) {
+                Column(Modifier.padding(12.dp)) {
+                    Text(category.displayName, fontWeight = FontWeight.Bold)
+                    Row(Modifier.horizontalScroll(rememberScrollState()).padding(top = 8.dp)) {
+                        availableColors.forEach { color ->
+                            Box(
+                                modifier = Modifier
+                                    .size(32.dp).padding(4.dp)
+                                    .clip(CircleShape)
+                                    .background(color)
+                                    .border(if(catColors[category] == color.toArgb()) 3.dp else 0.dp, Color.Gray, CircleShape)
+                                    .clickable { viewModel.setCategoryColor(category, color) }
+                            )
+                        }
+                    }
+                }
+            }
         }
 
         Spacer(Modifier.height(32.dp))
@@ -328,20 +419,23 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
         }
 
         Spacer(Modifier.height(32.dp))
-        Text("Monthly Income", fontWeight = FontWeight.Bold)
-        var incomeInput by remember { mutableStateOf(income.toString()) }
-        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-            OutlinedTextField(
-                value = incomeInput, onValueChange = { incomeInput = it },
-                label = { Text(currentCurrency.symbol) }, modifier = Modifier.weight(1f),
-                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
-            )
-            IconButton(onClick = { 
-                incomeInput.toDoubleOrNull()?.let { 
-                    viewModel.setIncome(it)
-                    Toast.makeText(context, "Income Saved", Toast.LENGTH_SHORT).show()
-                }
-            }) { Icon(Icons.Default.Check, null, tint = Color.Green) }
+        Text("Budget Configuration", style = MaterialTheme.typography.titleLarge, fontWeight = FontWeight.Bold)
+        ExpenseCategory.entries.forEach { category ->
+            var tempAmount by remember { mutableStateOf(budgets[category]?.toString() ?: "500") }
+            Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Text(category.displayName, Modifier.weight(1f))
+                OutlinedTextField(
+                    value = tempAmount, onValueChange = { tempAmount = it },
+                    label = { Text(currentCurrency.symbol) }, modifier = Modifier.width(100.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+                )
+                IconButton(onClick = { 
+                    tempAmount.toDoubleOrNull()?.let { 
+                        viewModel.setCategoryBudget(category, it)
+                        Toast.makeText(context, "Budget Saved", Toast.LENGTH_SHORT).show()
+                    }
+                }) { Icon(Icons.Default.Check, null, tint = Color.Green) }
+            }
         }
     }
 }
@@ -352,6 +446,7 @@ fun QuickAddExpense(viewModel: ExpenseViewModel) {
     var title by remember { mutableStateOf("") }
     var amount by remember { mutableStateOf("") }
     var selectedCat by remember { mutableStateOf(ExpenseCategory.Food) }
+    val currentCurrency by viewModel.currency.collectAsState()
     val context = LocalContext.current
 
     Column(
@@ -362,11 +457,12 @@ fun QuickAddExpense(viewModel: ExpenseViewModel) {
         OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Entry Name") }, modifier = Modifier.fillMaxWidth())
         OutlinedTextField(
             value = amount, onValueChange = { amount = it }, 
-            label = { Text("Amount") }, 
+            label = { Text("Amount (${currentCurrency.symbol})") }, 
             modifier = Modifier.fillMaxWidth(),
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
         )
 
+        Text("Category:", fontWeight = FontWeight.Bold)
         Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             ExpenseCategory.entries.forEach { cat ->
                 FilterChip(selected = selectedCat == cat, onClick = { selectedCat = cat }, label = { Text(cat.displayName) })
@@ -377,7 +473,7 @@ fun QuickAddExpense(viewModel: ExpenseViewModel) {
             onClick = {
                 val amt = amount.toDoubleOrNull()
                 if (title.isNotBlank() && amt != null) {
-                    viewModel.addExpense(title, amt, selectedCat)
+                    viewModel.addExpense(title, amt / currentCurrency.rate, selectedCat)
                     title = ""; amount = ""
                     Toast.makeText(context, "Transaction Logged!", Toast.LENGTH_SHORT).show()
                 }
