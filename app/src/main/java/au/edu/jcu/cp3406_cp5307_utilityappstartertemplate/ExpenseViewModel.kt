@@ -44,6 +44,8 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         prefs.edit().putBoolean("notif_enabled", _notificationsEnabled.value).apply()
     }
 
+    fun formatAmount(amount: Double): String = "$${"%.2f".format(amount)}"
+
     fun addExpense(title: String, amount: Double, category: ExpenseCategory, isRecurring: Boolean = false) {
         if (title.isBlank() || amount <= 0) return
         val newExpense = Expense(title = title, amount = amount, category = category, isRecurring = isRecurring)
@@ -71,6 +73,10 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     fun getTotalSpending(): Double = _expenses.value.sumOf { it.amount }
     
     fun getBalance(): Double = _income.value - getTotalSpending()
+
+    fun getTotalBudget(): Double = _categoryBudgets.value.values.sumOf { it }
+    
+    fun isBudgetOverIncome(): Boolean = getTotalBudget() > _income.value
 
     private fun saveExpenses() {
         val json = gson.toJson(_expenses.value)

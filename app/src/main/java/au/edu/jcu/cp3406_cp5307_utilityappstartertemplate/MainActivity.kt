@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -21,6 +22,7 @@ import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -126,10 +128,30 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
             Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
-                SummaryItem("Income", "$${"%.2f".format(income)}", Color(0xFF4CAF50))
-                SummaryItem("Balance", "$${"%.2f".format(balance)}", if(balance >= 0) Color.Blue else Color.Red)
+                SummaryItem("Income", viewModel.formatAmount(income), Color(0xFF4CAF50))
+                SummaryItem("Balance", viewModel.formatAmount(balance), if(balance >= 0) Color.Blue else Color.Red)
             }
         }
+
+        if (viewModel.isBudgetOverIncome()) {
+            Card(
+                modifier = Modifier.fillMaxWidth().padding(bottom = 16.dp),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                border = BorderStroke(1.dp, Color.Red)
+            ) {
+                Row(Modifier.padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+                    Icon(Icons.Default.Warning, contentDescription = null, tint = Color.Red)
+                    Spacer(Modifier.width(8.dp))
+                    Text(
+                        "Warning: Total Budget (${viewModel.formatAmount(viewModel.getTotalBudget())}) exceeds Income!",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
+        }
+
         Text("Spending Breakdown", fontWeight = FontWeight.Bold, fontSize = 18.sp)
         Spacer(Modifier.height(16.dp))
         
@@ -172,7 +194,7 @@ fun CategorySummaryCard(category: ExpenseCategory, viewModel: ExpenseViewModel, 
             Spacer(Modifier.width(16.dp))
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
                 Text(category.displayName, fontWeight = FontWeight.Bold)
-                Text("$${"%.2f".format(total)}", fontWeight = FontWeight.Black)
+                Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black)
             }
         }
     }
@@ -229,7 +251,7 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Spent", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-            Text("$${"%.2f".format(total)}", fontWeight = FontWeight.Black, fontSize = 16.sp)
+            Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black, fontSize = 16.sp)
         }
     }
 }
@@ -247,7 +269,7 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
         Box(modifier = Modifier.fillMaxWidth().background(categoryColor, RoundedCornerShape(16.dp)).padding(20.dp)) {
             Column {
                 Text("${category.displayName} File", fontSize = 20.sp, fontWeight = FontWeight.Black, color = Color.White)
-                Text("Total Spent: $${"%.2f".format(total)}", color = Color.White)
+                Text("Total Spent: ${viewModel.formatAmount(total)}", color = Color.White)
             }
         }
         
@@ -262,7 +284,7 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(expense.title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
-                    Text("-$${"%.2f".format(expense.amount)}", color = Color.Red, fontWeight = FontWeight.Black)
+                    Text("-${viewModel.formatAmount(expense.amount)}", color = Color.Red, fontWeight = FontWeight.Black)
                     IconButton(onClick = { 
                         viewModel.removeExpense(expense) 
                         Toast.makeText(context, "Transaction Deleted", Toast.LENGTH_SHORT).show()
