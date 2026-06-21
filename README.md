@@ -6,7 +6,18 @@ It provides the structure for a simple tabular UI using **Jetpack Compose** and 
 ---
 
 ## Getting Started
+Core Features
+• Visual Dashboard: Interactive Pie Chart for immediate spending breakdown.
+• Expense Tracking: Quick-add transactions and a deletable history log.
+• Budget Alerts: Progress bars and color-coded warnings when approaching limits.
+• Sustainability Check: Proactive alerts if the total budget exceeds monthly income.
+• Customization: Support for multiple currencies and personalized category colors.
 
+Implementation Details
+• Architecture: MVVM pattern using ViewModel and StateFlow for reactive UI.
+• UI: Built entirely with Jetpack Compose, including custom Canvas drawing for charts.
+• Persistence: Transactions are serialized to JSON via Gson and saved in SharedPreferences.
+• Optimization: Uses stable keys in lists to ensure smooth deletion animations and performance.
 ### How to Run
 1. Clone or download this repo  
 2. Open in Android Studio  
