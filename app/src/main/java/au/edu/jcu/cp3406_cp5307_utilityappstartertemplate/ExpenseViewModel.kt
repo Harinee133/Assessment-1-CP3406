@@ -34,6 +34,9 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean("notif_enabled", true))
     val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
 
+    private val _currency = MutableStateFlow(Currency.USD)
+    val currency: StateFlow<Currency> = _currency.asStateFlow()
+
     fun toggleDarkMode() { 
         _isDarkMode.value = !_isDarkMode.value 
         prefs.edit().putBoolean("dark_mode", _isDarkMode.value).apply()
@@ -44,7 +47,19 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
         prefs.edit().putBoolean("notif_enabled", _notificationsEnabled.value).apply()
     }
 
-    fun formatAmount(amount: Double): String = "$${"%.2f".format(amount)}"
+    fun setCurrency(newCurrency: Currency) { _currency.value = newCurrency }
+
+    fun setIncome(amount: Double) {
+        _income.value = amount
+        prefs.edit().putFloat("monthly_income", amount.toFloat()).apply()
+    }
+
+    enum class Currency(val symbol: String, val rate: Double) {
+        USD("$", 1.0), EUR("€", 0.92), AUD("A$", 1.52), GBP("£", 0.79), JPY("¥", 150.0), INR("₹", 83.0), RM("RM", 4.7)
+    }
+
+    fun convert(amount: Double): Double = amount * _currency.value.rate
+    fun formatAmount(amount: Double): String = "${_currency.value.symbol}${"%.2f".format(convert(amount))}"
 
     fun addExpense(title: String, amount: Double, category: ExpenseCategory, isRecurring: Boolean = false) {
         if (title.isBlank() || amount <= 0) return

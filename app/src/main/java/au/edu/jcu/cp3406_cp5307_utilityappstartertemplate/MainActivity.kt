@@ -298,6 +298,9 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
 fun SettingsScreen(viewModel: ExpenseViewModel) {
     val isDark by viewModel.isDarkMode.collectAsState()
     val notifications by viewModel.notificationsEnabled.collectAsState()
+    val currentCurrency by viewModel.currency.collectAsState()
+    val income by viewModel.income.collectAsState()
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Black)
@@ -310,6 +313,35 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
         Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
             Text("Notifications", Modifier.weight(1f))
             Switch(checked = notifications, onCheckedChange = { viewModel.toggleNotifications() })
+        }
+
+        Spacer(Modifier.height(32.dp))
+        Text("Currency Preference", fontWeight = FontWeight.Bold)
+        Row(Modifier.padding(vertical = 12.dp).horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ExpenseViewModel.Currency.entries.forEach { currency ->
+                FilterChip(
+                    selected = currentCurrency == currency,
+                    onClick = { viewModel.setCurrency(currency) },
+                    label = { Text("${currency.name} (${currency.symbol})") }
+                )
+            }
+        }
+
+        Spacer(Modifier.height(32.dp))
+        Text("Monthly Income", fontWeight = FontWeight.Bold)
+        var incomeInput by remember { mutableStateOf(income.toString()) }
+        Row(Modifier.fillMaxWidth().padding(vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+            OutlinedTextField(
+                value = incomeInput, onValueChange = { incomeInput = it },
+                label = { Text(currentCurrency.symbol) }, modifier = Modifier.weight(1f),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+            )
+            IconButton(onClick = { 
+                incomeInput.toDoubleOrNull()?.let { 
+                    viewModel.setIncome(it)
+                    Toast.makeText(context, "Income Saved", Toast.LENGTH_SHORT).show()
+                }
+            }) { Icon(Icons.Default.Check, null, tint = Color.Green) }
         }
     }
 }
