@@ -1,6 +1,7 @@
 package au.edu.jcu.cp3406_cp5307_utilityappstartertemplate
 
 import android.os.Bundle
+import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -17,6 +18,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -28,6 +30,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -216,6 +219,7 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
     val total = remember(history) { history.sumOf { it.amount } }
     val catColors by viewModel.categoryColors.collectAsState()
     val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
+    val context = LocalContext.current
 
     Column(Modifier.fillMaxSize().padding(16.dp)) {
         Box(modifier = Modifier.fillMaxWidth().background(categoryColor, RoundedCornerShape(16.dp)).padding(20.dp)) {
@@ -231,12 +235,18 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
         LazyColumn(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(10.dp)) {
             items(history.reversed(), key = { it.id }) { expense ->
                 Row(
-                    modifier = Modifier.fillMaxWidth().padding(16.dp),
+                    modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surface).padding(16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(expense.title, fontWeight = FontWeight.Bold)
+                    Text(expense.title, fontWeight = FontWeight.Bold, modifier = Modifier.weight(1f))
                     Text("-$${"%.2f".format(expense.amount)}", color = Color.Red, fontWeight = FontWeight.Black)
+                    IconButton(onClick = { 
+                        viewModel.removeExpense(expense) 
+                        Toast.makeText(context, "Transaction Deleted", Toast.LENGTH_SHORT).show()
+                    }) {
+                        Icon(Icons.Default.Delete, contentDescription = "Delete", tint = Color.Gray)
+                    }
                 }
             }
         }
