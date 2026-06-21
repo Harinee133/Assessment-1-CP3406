@@ -47,8 +47,9 @@ class MainActivity : ComponentActivity() {
         enableEdgeToEdge()
         setContent {
             val viewModel: ExpenseViewModel = viewModel()
+            val isDark by viewModel.isDarkMode.collectAsState()
             
-            CP3406_CP5603UtilityAppStarterTemplateTheme(dynamicColor = false) {
+            CP3406_CP5603UtilityAppStarterTemplateTheme(darkTheme = isDark, dynamicColor = false) {
                 Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
                     WealthWatchApp(viewModel)
                 }
@@ -276,9 +277,20 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
 
 @Composable
 fun SettingsScreen(viewModel: ExpenseViewModel) {
+    val isDark by viewModel.isDarkMode.collectAsState()
+    val notifications by viewModel.notificationsEnabled.collectAsState()
+
     Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
         Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Black)
         Spacer(Modifier.height(16.dp))
-        Text("Preference toggles and customisation options coming in next commit...", style = MaterialTheme.typography.bodyMedium)
+        
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("Dark Mode", Modifier.weight(1f))
+            Switch(checked = isDark, onCheckedChange = { viewModel.toggleDarkMode() })
+        }
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.fillMaxWidth()) {
+            Text("Notifications", Modifier.weight(1f))
+            Switch(checked = notifications, onCheckedChange = { viewModel.toggleNotifications() })
+        }
     }
 }

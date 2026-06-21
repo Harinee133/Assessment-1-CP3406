@@ -28,6 +28,22 @@ class ExpenseViewModel(application: Application) : AndroidViewModel(application)
     private val _income = MutableStateFlow(prefs.getFloat("monthly_income", 0f).toDouble())
     val income: StateFlow<Double> = _income.asStateFlow()
 
+    private val _isDarkMode = MutableStateFlow(prefs.getBoolean("dark_mode", false))
+    val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
+
+    private val _notificationsEnabled = MutableStateFlow(prefs.getBoolean("notif_enabled", true))
+    val notificationsEnabled: StateFlow<Boolean> = _notificationsEnabled.asStateFlow()
+
+    fun toggleDarkMode() { 
+        _isDarkMode.value = !_isDarkMode.value 
+        prefs.edit().putBoolean("dark_mode", _isDarkMode.value).apply()
+    }
+    
+    fun toggleNotifications() { 
+        _notificationsEnabled.value = !_notificationsEnabled.value 
+        prefs.edit().putBoolean("notif_enabled", _notificationsEnabled.value).apply()
+    }
+
     fun addExpense(title: String, amount: Double, category: ExpenseCategory, isRecurring: Boolean = false) {
         if (title.isBlank() || amount <= 0) return
         val newExpense = Expense(title = title, amount = amount, category = category, isRecurring = isRecurring)
