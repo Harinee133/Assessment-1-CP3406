@@ -19,6 +19,8 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
+import androidx.compose.material.icons.filled.Home
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -73,6 +75,24 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
                     }
                 }
             )
+        },
+        bottomBar = {
+            if (currentScreen != "CategoryDetail") {
+                NavigationBar {
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Home, contentDescription = "Home") },
+                        label = { Text("Home") },
+                        selected = currentScreen == "Home",
+                        onClick = { currentScreen = "Home" }
+                    )
+                    NavigationBarItem(
+                        icon = { Icon(Icons.Default.Settings, contentDescription = "Settings") },
+                        label = { Text("Settings") },
+                        selected = currentScreen == "Settings",
+                        onClick = { currentScreen = "Settings" }
+                    )
+                }
+            }
         }
     ) { innerPadding ->
         Box(modifier = Modifier.padding(innerPadding)) {
@@ -81,6 +101,7 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
                     selectedCategory = cat
                     currentScreen = "CategoryDetail"
                 }
+                "Settings" -> SettingsScreen(viewModel)
                 "CategoryDetail" -> selectedCategory?.let { 
                     CategoryFileScreen(it, viewModel)
                 }
@@ -250,5 +271,14 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
                 }
             }
         }
+    }
+}
+
+@Composable
+fun SettingsScreen(viewModel: ExpenseViewModel) {
+    Column(Modifier.fillMaxSize().padding(16.dp).verticalScroll(rememberScrollState())) {
+        Text("Settings", fontSize = 24.sp, fontWeight = FontWeight.Black)
+        Spacer(Modifier.height(16.dp))
+        Text("Preference toggles and customisation options coming in next commit...", style = MaterialTheme.typography.bodyMedium)
     }
 }
