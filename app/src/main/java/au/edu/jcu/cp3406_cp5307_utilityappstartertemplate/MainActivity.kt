@@ -5,24 +5,17 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.filled.Delete
-import androidx.compose.material.icons.filled.Home
-import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -36,6 +29,7 @@ import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -166,6 +160,9 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
             CategorySummaryCard(category, viewModel) { onCategoryClick(category) }
             Spacer(Modifier.height(12.dp))
         }
+
+        Spacer(Modifier.height(24.dp))
+        QuickAddExpense(viewModel)
     }
 }
 
@@ -223,7 +220,7 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
                         val sweepAngle = (spending / total).toFloat() * 360f
                         if (angle >= currentAngle && angle <= currentAngle + sweepAngle) {
                             onCategoryClick(category)
-                            onHover("${category.displayName}: $${"%.2f".format(spending)}")
+                            onHover("${category.displayName}: ${viewModel.formatAmount(spending)}")
                             return@forEach
                         }
                         currentAngle += sweepAngle
@@ -251,7 +248,7 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Spent", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-            Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black, fontSize = 16.sp)
+            Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.Black)
         }
     }
 }
@@ -314,5 +311,46 @@ fun SettingsScreen(viewModel: ExpenseViewModel) {
             Text("Notifications", Modifier.weight(1f))
             Switch(checked = notifications, onCheckedChange = { viewModel.toggleNotifications() })
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun QuickAddExpense(viewModel: ExpenseViewModel) {
+    var title by remember { mutableStateOf("") }
+    var amount by remember { mutableStateOf("") }
+    var selectedCat by remember { mutableStateOf(ExpenseCategory.Food) }
+    val context = LocalContext.current
+
+    Column(
+        modifier = Modifier.fillMaxWidth().background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f), RoundedCornerShape(24.dp)).padding(20.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text("Quick Entry", fontWeight = FontWeight.Black)
+        OutlinedTextField(value = title, onValueChange = { title = it }, label = { Text("Entry Name") }, modifier = Modifier.fillMaxWidth())
+        OutlinedTextField(
+            value = amount, onValueChange = { amount = it }, 
+            label = { Text("Amount") }, 
+            modifier = Modifier.fillMaxWidth(),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number)
+        )
+
+        Row(Modifier.horizontalScroll(rememberScrollState()), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            ExpenseCategory.entries.forEach { cat ->
+                FilterChip(selected = selectedCat == cat, onClick = { selectedCat = cat }, label = { Text(cat.displayName) })
+            }
+        }
+        
+        Button(
+            onClick = {
+                val amt = amount.toDoubleOrNull()
+                if (title.isNotBlank() && amt != null) {
+                    viewModel.addExpense(title, amt, selectedCat)
+                    title = ""; amount = ""
+                    Toast.makeText(context, "Transaction Logged!", Toast.LENGTH_SHORT).show()
+                }
+            },
+            modifier = Modifier.fillMaxWidth()
+        ) { Text("Save Transaction") }
     }
 }
