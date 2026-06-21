@@ -61,6 +61,7 @@ fun WealthWatchApp(viewModel: ExpenseViewModel) {
     var selectedCategory by remember { mutableStateOf<ExpenseCategory?>(null) }
 
     Scaffold(
+        modifier = Modifier.fillMaxSize(),
         topBar = {
             CenterAlignedTopAppBar(
                 title = { Text("WealthWatch Pro", fontWeight = FontWeight.ExtraBold) },
@@ -121,7 +122,7 @@ fun DashboardScreen(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCatego
             modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primaryContainer)
         ) {
-            Row(modifier = Modifier.padding(12.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+            Row(modifier = Modifier.padding(16.dp).fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
                 SummaryItem("Income", viewModel.formatAmount(income), Color(0xFF4CAF50))
                 SummaryItem("Balance", viewModel.formatAmount(balance), if(balance >= 0) Color.Blue else Color.Red)
             }
@@ -217,6 +218,8 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
     val catColors by viewModel.categoryColors.collectAsState()
     val total = remember(expenses) { expenses.sumOf { it.amount } }
     val categories = ExpenseCategory.entries
+    val holeColor = MaterialTheme.colorScheme.surface
+    val onSurfaceColor = MaterialTheme.colorScheme.onSurface
 
     Box(contentAlignment = Alignment.Center) {
         Canvas(modifier = Modifier
@@ -258,11 +261,11 @@ fun PieChart(viewModel: ExpenseViewModel, onCategoryClick: (ExpenseCategory) -> 
             if (total == 0.0) {
                 drawCircle(color = Color.LightGray, radius = size.width / 2)
             }
-            drawCircle(color = Color.White, radius = size.width / 3.5f)
+            drawCircle(color = holeColor, radius = size.width / 3.5f)
         }
         Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text("Spent", style = MaterialTheme.typography.labelSmall, color = Color.Gray)
-            Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black, fontSize = 16.sp, color = Color.Black)
+            Text(viewModel.formatAmount(total), fontWeight = FontWeight.Black, fontSize = 16.sp, color = onSurfaceColor)
         }
     }
 }
@@ -274,6 +277,7 @@ fun CategoryFileScreen(category: ExpenseCategory, viewModel: ExpenseViewModel) {
     val total = remember(history) { history.sumOf { it.amount } }
     val budgets by viewModel.categoryBudgets.collectAsState()
     val limit = budgets[category] ?: 500.0
+    
     val catColors by viewModel.categoryColors.collectAsState()
     val categoryColor = Color(catColors[category] ?: Color.Gray.toArgb())
     val isExceeded = total > limit
